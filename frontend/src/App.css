@@ -72,14 +72,15 @@
   grid-template-columns: minmax(280px, 360px) minmax(0, 1fr);
 }
 
-.inventory-panel {
+.inventory-panel,
+.inventory-form-card {
   background: #ffffff;
   border: 1px solid #e5e2d8;
   border-radius: 8px;
 }
 
-.form-panel {
-  padding: 1rem;
+.inventory-form-card {
+  width: 100%;
 }
 
 .panel-heading {
@@ -95,22 +96,6 @@
   margin: 0;
 }
 
-.product-form {
-  display: grid;
-  gap: 0.85rem;
-  margin-top: 1rem;
-}
-
-.product-form label {
-  color: #3e4742;
-  display: grid;
-  font-size: 0.86rem;
-  font-weight: 650;
-  gap: 0.4rem;
-}
-
-.product-form input,
-.product-form textarea,
 .search-box input {
   background: #fbfbf9;
   border: 1px solid #d9d5ca;
@@ -121,16 +106,9 @@
   padding: 0.65rem 0.72rem;
 }
 
-.product-form input:focus,
-.product-form textarea:focus,
 .search-box:focus-within {
   border-color: #4b8875;
   box-shadow: 0 0 0 3px rgb(75 136 117 / 14%);
-}
-
-.product-form input:disabled {
-  color: #7f8883;
-  cursor: not-allowed;
 }
 
 .form-row {

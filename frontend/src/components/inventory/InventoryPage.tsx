@@ -1,5 +1,5 @@
-import type { FormEvent } from "react";
 import { useEffect, useMemo, useState } from "react";
+import { toast } from "sonner";
 import {
   createProduct,
   deleteProduct,
@@ -7,7 +7,6 @@ import {
   updateProduct,
 } from "@/lib/productsApi";
 import {
-  emptyProductForm,
   type Product,
   type ProductFormValues,
 } from "@/types/product";
@@ -18,8 +17,7 @@ import { ProductTable } from "./ProductTable";
 
 export function InventoryPage() {
   const [products, setProducts] = useState<Product[]>([]);
-  const [form, setForm] = useState<ProductFormValues>(emptyProductForm);
-  const [editingId, setEditingId] = useState<number | null>(null);
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [search, setSearch] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -39,7 +37,31 @@ export function InventoryPage() {
   };
 
   useEffect(() => {
-    fetchProducts();
+    let isMounted = true;
+
+    async function loadProducts() {
+      try {
+        const loadedProducts = await getProducts();
+
+        if (isMounted) {
+          setProducts(loadedProducts);
+        }
+      } catch {
+        if (isMounted) {
+          setError("Could not load products. Make sure the FastAPI server is running.");
+        }
+      } finally {
+        if (isMounted) {
+          setIsLoading(false);
+        }
+      }
+    }
+
+    loadProducts();
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   const filteredProducts = useMemo(() => {
@@ -58,48 +80,47 @@ export function InventoryPage() {
   }, [products, search]);
 
   const resetForm = () => {
-    setForm(emptyProductForm);
-    setEditingId(null);
+    setSelectedProduct(null);
   };
 
-  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
+  const handleSubmit = async (values: ProductFormValues) => {
     setIsSaving(true);
     setError("");
 
     const product: Product = {
-      id: Number(form.id),
-      name: form.name.trim(),
-      description: form.description.trim(),
-      price: Number(form.price),
-      quantity: Number(form.quantity),
+      id: Number(values.id),
+      name: values.name.trim(),
+      description: values.description.trim(),
+      price: Number(values.price),
+      quantity: Number(values.quantity),
     };
 
     try {
-      if (editingId !== null) {
-        await updateProduct(editingId, product);
+      if (selectedProduct) {
+        await updateProduct(selectedProduct.id, product);
+        toast.success("Product updated", {
+          description: `${product.name} was saved successfully.`,
+        });
       } else {
         await createProduct(product);
+        toast.success("Product created", {
+          description: `${product.name} was added to inventory.`,
+        });
       }
 
       resetForm();
       await fetchProducts();
     } catch {
-      setError("Could not save product. Check that the ID is unique and fields are valid.");
+      toast.error("Could not save product", {
+        description: "Check that the ID is unique and all fields are valid.",
+      });
     } finally {
       setIsSaving(false);
     }
   };
 
   const handleEdit = (product: Product) => {
-    setEditingId(product.id);
-    setForm({
-      id: String(product.id),
-      name: product.name,
-      description: product.description,
-      price: String(product.price),
-      quantity: String(product.quantity),
-    });
+    setSelectedProduct(product);
   };
 
   const handleDelete = async (id: number) => {
@@ -110,12 +131,15 @@ export function InventoryPage() {
       setProducts((currentProducts) =>
         currentProducts.filter((product) => product.id !== id),
       );
+      toast.success("Product deleted");
 
-      if (editingId === id) {
+      if (selectedProduct?.id === id) {
         resetForm();
       }
     } catch {
-      setError("Could not delete product. Please try again.");
+      toast.error("Could not delete product", {
+        description: "Please try again.",
+      });
     }
   };
 
@@ -134,11 +158,9 @@ export function InventoryPage() {
 
         <div className="inventory-layout">
           <ProductForm
-            form={form}
-            editingId={editingId}
+            product={selectedProduct}
             isSaving={isSaving}
             onCancelEdit={resetForm}
-            onChange={setForm}
             onSubmit={handleSubmit}
           />
           <ProductTable
