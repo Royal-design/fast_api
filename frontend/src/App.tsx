@@ -1,7 +1,8 @@
 import "./App.css";
+import { InventoryPage } from "./components/inventory/InventoryPage";
 
 function App() {
-  return <div className="text-lg text-red-500">welcome</div>;
+  return <InventoryPage />;
 }
 
 export default App;
